@@ -105,7 +105,7 @@ func Println(tag string, msg string) {
 }
 
 func Errorf(tag string, format string, v ...any) {
-	log.Printf(toColoredText(Red, "Error: ")+addColoredTag(tag, format), v)
+	log.Printf(toColoredText(Red, "Error: ")+addColoredTag(tag, format), v...)
 }
 
 func Error(tag string, msg string) {
@@ -113,7 +113,7 @@ func Error(tag string, msg string) {
 }
 
 func Warnf(tag string, format string, v ...any) {
-	log.Printf(toColoredText(Yellow, "Warning: ")+addColoredTag(tag, format), v)
+	log.Printf(toColoredText(Yellow, "Warning: ")+addColoredTag(tag, format), v...)
 }
 
 func Warn(tag string, msg string) {
@@ -121,11 +121,19 @@ func Warn(tag string, msg string) {
 }
 
 func Infof(tag string, format string, v ...any) {
-	Printf(tag, format, v)
+	Printf(tag, format, v...)
 }
 
 func Info(tag string, msg string) {
 	Println(tag, msg)
+}
+
+func Fatalf(tag string, format string, v ...any) {
+	log.Fatalf(toColoredText(Red, "Fatal: ")+addColoredTag(tag, format), v...)
+}
+
+func Fatal(tag string, msg string) {
+	log.Fatal(toColoredText(Red, "Fatal: ") + addColoredTag(tag, msg))
 }
 
 func GinLogTag(tag string) gin.HandlerFunc {
