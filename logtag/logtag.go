@@ -12,6 +12,14 @@ import (
 )
 
 type LogColor int
+type LogLevel int
+
+const (
+	LevelInfo LogLevel = iota
+	LevelWarning
+	LevelError
+	LevelFatal
+)
 
 const (
 	Black LogColor = iota
@@ -75,10 +83,15 @@ func (c LogColor) ColorString() string {
 }
 
 var tagMap map[string]LogColor
+var minLogLevel LogLevel = LevelInfo
 
 func ConfigureLogger(tags map[string]LogColor) {
 	tagMap = tags
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime)) //remove timestamp, already included in grafana
+}
+
+func SetMinimumLogLevel(l LogLevel) {
+	minLogLevel = l
 }
 
 // Error logs a message at level Error on the standard logger.
@@ -97,43 +110,73 @@ func toColoredText(col LogColor, message string) string {
 }
 
 func Printf(tag string, format string, v ...any) {
+	if minLogLevel > LevelInfo {
+		return
+	}
 	log.Printf(addColoredTag(tag, format), v...)
 }
 
 func Println(tag string, msg string) {
+	if minLogLevel > LevelInfo {
+		return
+	}
 	log.Print(addColoredTag(tag, msg))
 }
 
-func Errorf(tag string, format string, v ...any) {
-	log.Printf(toColoredText(Red, "Error: ")+addColoredTag(tag, format), v...)
-}
-
-func Error(tag string, msg string) {
-	log.Print(toColoredText(Red, "Error: ") + addColoredTag(tag, msg))
-}
-
-func Warnf(tag string, format string, v ...any) {
-	log.Printf(toColoredText(Yellow, "Warning: ")+addColoredTag(tag, format), v...)
-}
-
-func Warn(tag string, msg string) {
-	log.Print(toColoredText(Yellow, "Warning: ") + addColoredTag(tag, msg))
-}
-
 func Infof(tag string, format string, v ...any) {
+	if minLogLevel > LevelInfo {
+		return
+	}
 	Printf(tag, format, v...)
 }
 
 func Info(tag string, msg string) {
+	if minLogLevel > LevelInfo {
+		return
+	}
 	Println(tag, msg)
 }
 
+func Warnf(tag string, format string, v ...any) {
+	if minLogLevel > LevelWarning {
+		return
+	}
+	log.Printf(addColoredTag(tag, toColoredText(Yellow, "Warning: ")+format), v...)
+}
+
+func Warn(tag string, msg string) {
+	if minLogLevel > LevelWarning {
+		return
+	}
+	log.Print(addColoredTag(tag, toColoredText(Yellow, "Warning: ")+msg))
+}
+
+func Errorf(tag string, format string, v ...any) {
+	if minLogLevel > LevelError {
+		return
+	}
+	log.Printf(addColoredTag(tag, toColoredText(Red, "Error: ")+format), v...)
+}
+
+func Error(tag string, msg string) {
+	if minLogLevel > LevelError {
+		return
+	}
+	log.Print(addColoredTag(tag, toColoredText(Red, "Error: ")+msg))
+}
+
 func Fatalf(tag string, format string, v ...any) {
-	log.Fatalf(toColoredText(Red, "Fatal: ")+addColoredTag(tag, format), v...)
+	if minLogLevel > LevelFatal {
+		return
+	}
+	log.Fatalf(addColoredTag(tag, toColoredText(Red, "Fatal: ")+format), v...)
 }
 
 func Fatal(tag string, msg string) {
-	log.Fatal(toColoredText(Red, "Fatal: ") + addColoredTag(tag, msg))
+	if minLogLevel > LevelFatal {
+		return
+	}
+	log.Fatal(addColoredTag(tag, toColoredText(Red, "Fatal: ")+msg))
 }
 
 func GinLogTag(tag string) gin.HandlerFunc {
@@ -162,9 +205,9 @@ func GinLogTag(tag string) gin.HandlerFunc {
 		method := toColoredText(BrightBlue, c.Request.Method)
 
 		statusCodeString := fmt.Sprint(statusCode)
-		if statusCode >= http.StatusInternalServerError {
+		if statusCode > http.StatusInternalServerError {
 			statusCodeString = toColoredText(Red, statusCodeString)
-		} else if statusCode >= http.StatusBadRequest {
+		} else if statusCode > http.StatusBadRequest {
 			statusCodeString = toColoredText(Yellow, statusCodeString)
 		} else {
 			statusCodeString = toColoredText(Green, statusCodeString)
@@ -174,7 +217,7 @@ func GinLogTag(tag string) gin.HandlerFunc {
 			Error(tag, c.Errors.ByType(gin.ErrorTypePrivate).String())
 		} else {
 			msg := fmt.Sprintf("%s - %s \"%s %s\" %s %d \"%s\" (%dms)", clientIP, hostname, method, path, statusCodeString, dataLength, clientUserAgent, latency)
-			if statusCode >= http.StatusInternalServerError {
+			if statusCode > http.StatusInternalServerError {
 				Error(tag, msg)
 			} else {
 				Info(tag, msg)
