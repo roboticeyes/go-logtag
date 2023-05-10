@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func GrpcLogTagServerInterceptor(logTag string) grpc.UnaryServerInterceptor {
+func GrpcLogTagServerUnaryInterceptor(logTag string) grpc.UnaryServerInterceptor {
 
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 
@@ -25,7 +25,7 @@ func GrpcLogTagServerInterceptor(logTag string) grpc.UnaryServerInterceptor {
 	}
 }
 
-func GrpcLogTagClientInterceptor(logTag string) grpc.UnaryClientInterceptor {
+func GrpcLogTagClientUnaryInterceptor(logTag string) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req interface{}, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		logtag.Printf(logTag, "↗️ %s: %s", method, req)
 		// Calls the handler
@@ -39,4 +39,62 @@ func GrpcLogTagClientInterceptor(logTag string) grpc.UnaryClientInterceptor {
 
 		return err
 	}
+}
+
+func GrpcLogTagServerStreamInterceptor(logTag string) grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+
+		logtag.Printf(logTag, "↘️ %s: streaming started (client streaming: %t, server streaming: %t)", info.FullMethod, info.IsClientStream, info.IsServerStream)
+		// Calls the handler
+		err := handler(srv, &serverStreamMsgInterceptor{ServerStream: ss, tag: logTag, info: info})
+
+		logtag.Printf(logTag, "↗️ %s: streaming closed", info.FullMethod)
+
+		return err
+	}
+}
+
+func GrpcLogTagClientStreamInterceptor(logTag string) grpc.StreamClientInterceptor {
+	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+
+		logtag.Printf(logTag, "↘️ %s: streaming started  (client streaming: %t, server streaming: %t)", method, desc.ClientStreams, desc.ServerStreams)
+		// Calls the handler
+		clientStream, err := streamer(ctx, desc, cc, method, opts...)
+		if err != nil {
+			return nil, err
+		}
+
+		logtag.Printf(logTag, "↗️ %s: streaming closed", method)
+
+		return clientStream, nil
+	}
+}
+
+type serverStreamMsgInterceptor struct {
+	grpc.ServerStream
+	tag  string
+	info *grpc.StreamServerInfo
+}
+
+func (s *serverStreamMsgInterceptor) SendMsg(m any) error {
+	err := s.ServerStream.SendMsg(m)
+	if err != nil {
+		logtag.Errorf(s.tag, "%s: %s", s.info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
+	} else if s.info.IsServerStream {
+		logtag.Printf(s.tag, "↗️ %s: msg: %s", s.info.FullMethod, m)
+	}
+
+	return err
+}
+
+func (s *serverStreamMsgInterceptor) RecvMsg(m any) error {
+	err := s.ServerStream.RecvMsg(m)
+
+	if err != nil {
+		logtag.Errorf(s.tag, "%s: %s", s.info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
+	} else if s.info.IsClientStream {
+		logtag.Printf(s.tag, "↘️ %s: msg: %s", s.info.FullMethod, m)
+	}
+
+	return err
 }
