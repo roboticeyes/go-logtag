@@ -1,4 +1,4 @@
-module github.com/roboticeyes/go-logtag/logtag
+module github.com/roboticeyes/go-logtag
 
 go 1.20
 
