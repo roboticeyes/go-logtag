@@ -47,7 +47,7 @@ Also supports log functions `Info`, `Infof`, `Warn`, `Warnf`, `Error`, `Errorf`,
 
 It is possible to define a minimum log level to limit how much is logged. E.g if you want only errors and fatals:
 ```go
-lt.SetMinimumLogLevel(lt.LevelError)
+logtag.SetMinimumLogLevel(logtag.LevelError)
 ```
 
 ## Gin middleware function
