@@ -1,4 +1,4 @@
-package gin
+package logtag_gin
 
 import (
 	"fmt"

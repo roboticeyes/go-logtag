@@ -1,4 +1,4 @@
-package grpc
+package logtag_grpc
 
 import (
 	"context"
