@@ -5,7 +5,14 @@ Colored tags before log messages
 
 ## Usage
 
-- Copy the logtag directory into your go project
+- if you have not done so yet, add the following code (with correct username) to your `.gitconfig` file
+```
+[url "https://YOUR_GITHUB_USERNAME@github.com/"]
+    insteadOf = https://github.com/
+```
+
+- Add the repo to the GOPRIVATE go environment variable `go env -w GOPRIVATE=github.com/roboticeyes/go-logtag` (Note: need to look how to append)
+- Import the package in code same way as other modules
 - Define your tags and colormap and call `ConfigureLogger`:
 ```go
 // define tags
@@ -34,7 +41,14 @@ logtag.Printf(TagRepository, "This is a repository message")
 logtag.Println(TagHttp, "This is a HTTP message")
 ```
 
-Also supports log functions `Error`, `Errorf`, `Warn`, `Warnf`, `Info`, `Infof`, `Fatal`, `Fatalf` for easy migration from other logging libraries
+Also supports log functions `Info`, `Infof`, `Warn`, `Warnf`, `Error`, `Errorf`, `Fatal`, `Fatalf` for easy migration from other logging libraries
+
+## Log levels
+
+It is possible to define a minimum log level to limit how much is logged. E.g if you want only errors and fatals:
+```go
+logtag.SetMinimumLogLevel(logtag.LevelError)
+```
 
 ## Gin middleware function
 
@@ -43,5 +57,13 @@ Also supports log functions `Error`, `Errorf`, `Warn`, `Warnf`, `Info`, `Infof`,
 Use as gin logging middleware:
 ```go
 engine *gin.Engine = gin.New()
-engine.Use(logtag.GinLogTag(TagHttp))
+engine.Use(logtag_gin.GinLogTag(TagHttp))
+```
+
+## GRPC interceptors
+
+There are GRPC logging interceptors for unary and streaming calls for both client and server side.
+Here's an example for a uniary server interceptor:
+```go
+s := grpc.NewServer(grpc.UnaryInterceptor(logtag_grpc.GrpcLogTagServerInterceptor(lt.TagGrpc)))
 ```
