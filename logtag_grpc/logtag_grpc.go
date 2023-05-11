@@ -64,13 +64,14 @@ func GrpcLogTagClientStreamInterceptor(logTag string) grpc.StreamClientIntercept
 		logtag.Printf(logTag, "↘️ %s: streaming started  (client streaming: %t, server streaming: %t)", method, desc.ClientStreams, desc.ServerStreams)
 		// Calls the handler
 		clientStream, err := streamer(ctx, desc, cc, method, opts...)
+
 		if err != nil {
-			return nil, err
+			logtag.Errorf(logTag, "↗️ %s: %s", method, logtag.ToColoredText(logtag.Red, err.Error()))
+		} else {
+			logtag.Printf(logTag, "↗️ %s: streaming closed", method)
 		}
 
-		logtag.Printf(logTag, "↗️ %s: streaming closed", method)
-
-		return clientStream, nil
+		return clientStream, err
 	}
 }
 
@@ -98,6 +99,36 @@ func (s *serverStreamMsgInterceptor) RecvMsg(m any) error {
 		logtag.Errorf(s.tag, "%s: %s", s.info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
 	} else if s.info.IsClientStream {
 		logtag.Printf(s.tag, "↘️ %s: msg: %s", s.info.FullMethod, m)
+	}
+
+	return err
+}
+
+type clientStreamMsgInterceptor struct {
+	grpc.ClientStream
+	desc   *grpc.StreamDesc
+	tag    string
+	method string
+}
+
+func (cs *clientStreamMsgInterceptor) SendMsg(m any) error {
+	err := cs.ClientStream.SendMsg(m)
+	if err != nil {
+		logtag.Errorf(cs.tag, "%s: %s", cs.method, logtag.ToColoredText(logtag.Red, err.Error()))
+	} else if cs.desc.ClientStreams {
+		logtag.Printf(cs.tag, "↗️ %s: msg: %s", cs.method, m)
+	}
+
+	return err
+}
+
+func (cs *clientStreamMsgInterceptor) RecvMsg(m any) error {
+	err := cs.ClientStream.RecvMsg(m)
+
+	if err != nil {
+		logtag.Errorf(cs.tag, "%s: %s", cs.method, logtag.ToColoredText(logtag.Red, err.Error()))
+	} else if cs.desc.ClientStreams {
+		logtag.Printf(cs.tag, "↘️ %s: msg: %s", cs.method, m)
 	}
 
 	return err
