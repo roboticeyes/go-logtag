@@ -19,7 +19,6 @@ func GrpcLogTagServerUnaryInterceptor(logTag string) grpc.UnaryServerInterceptor
 			logtag.Errorf(logTag, "↗️ %s: %s", info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
 		} else {
 			logtag.Printf(logTag, "↗️ %s: %s", info.FullMethod, h)
-			logtag.Printf(logTag, ">>>↗️ %s: %s", info.FullMethod)
 		}
 
 		return h, err
