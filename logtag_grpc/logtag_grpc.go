@@ -2,6 +2,7 @@ package logtag_grpc
 
 import (
 	"context"
+	"io"
 
 	"github.com/roboticeyes/go-logtag/logtag"
 	"google.golang.org/grpc"
@@ -125,9 +126,9 @@ func (cs *clientStreamMsgInterceptor) SendMsg(m any) error {
 func (cs *clientStreamMsgInterceptor) RecvMsg(m any) error {
 	err := cs.ClientStream.RecvMsg(m)
 
-	if err != nil {
+	if err != nil && err != io.EOF {
 		logtag.Errorf(cs.tag, "%s: %s", cs.method, logtag.ToColoredText(logtag.Red, err.Error()))
-	} else if cs.desc.ClientStreams {
+	} else if cs.desc.ServerStreams {
 		logtag.Printf(cs.tag, "↘️ %s: msg: %s", cs.method, m)
 	}
 
