@@ -85,7 +85,7 @@ func (s *serverStreamMsgInterceptor) RecvMsg(m any) error {
 	if err == io.EOF {
 		return err
 	}
-	if err != nil && err != io.EOF {
+	if err != nil {
 		logtag.Errorf(s.tag, "↘️ %s: %s", s.info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
 	} else if s.info.IsClientStream {
 		logtag.Printf(s.tag, "↘️ %s: %s", s.info.FullMethod, m)
