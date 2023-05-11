@@ -9,7 +9,6 @@ import (
 )
 
 func GrpcLogTagServerUnaryInterceptor(logTag string) grpc.UnaryServerInterceptor {
-
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 
 		logtag.Printf(logTag, "↘️ %s: %s", info.FullMethod, req)
@@ -20,6 +19,7 @@ func GrpcLogTagServerUnaryInterceptor(logTag string) grpc.UnaryServerInterceptor
 			logtag.Errorf(logTag, "↗️ %s: %s", info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
 		} else {
 			logtag.Printf(logTag, "↗️ %s: %s", info.FullMethod, h)
+			logtag.Printf(logTag, ">>>↗️ %s: %s", info.FullMethod)
 		}
 
 		return h, err
@@ -61,6 +61,41 @@ func GrpcLogTagServerStreamInterceptor(logTag string) grpc.StreamServerIntercept
 	}
 }
 
+type serverStreamMsgInterceptor struct {
+	grpc.ServerStream
+	tag  string
+	info *grpc.StreamServerInfo
+}
+
+func (s *serverStreamMsgInterceptor) SendMsg(m any) error {
+	err := s.ServerStream.SendMsg(m)
+	if err == io.EOF {
+		return err
+	}
+	if err != nil {
+		logtag.Errorf(s.tag, "↗️ %s: %s", s.info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
+	} else if s.info.IsServerStream {
+		logtag.Printf(s.tag, "↗️ %s: %s", s.info.FullMethod, m)
+	}
+
+	return err
+}
+
+func (s *serverStreamMsgInterceptor) RecvMsg(m any) error {
+	err := s.ServerStream.RecvMsg(m)
+	if err == io.EOF {
+		return err
+	}
+	if err != nil && err != io.EOF {
+		logtag.Errorf(s.tag, "↘️ %s: %s", s.info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
+	} else if s.info.IsClientStream {
+		logtag.Printf(s.tag, "↘️ %s: %s", s.info.FullMethod, m)
+	}
+
+	return err
+}
+
+// TODO GrpcLogTagClientStreamInterceptor Not tested, might need some love
 func GrpcLogTagClientStreamInterceptor(logTag string) grpc.StreamClientInterceptor {
 	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 
@@ -79,44 +114,6 @@ func GrpcLogTagClientStreamInterceptor(logTag string) grpc.StreamClientIntercept
 	}
 }
 
-type serverStreamMsgInterceptor struct {
-	grpc.ServerStream
-	tag  string
-	info *grpc.StreamServerInfo
-}
-
-func (s *serverStreamMsgInterceptor) SendMsg(m any) error {
-	err := s.ServerStream.SendMsg(m)
-
-	if err == io.EOF {
-		return nil
-	}
-
-	if err != nil {
-		logtag.Errorf(s.tag, "↗️ %s: %s", s.info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
-	} else if s.info.IsServerStream {
-		logtag.Printf(s.tag, "↗️ %s: msg: %s", s.info.FullMethod, m)
-	}
-
-	return err
-}
-
-func (s *serverStreamMsgInterceptor) RecvMsg(m any) error {
-	err := s.ServerStream.RecvMsg(m)
-
-	if err == io.EOF {
-		return err
-	}
-
-	if err != nil {
-		logtag.Errorf(s.tag, "↗️ %s: %s", s.info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
-	} else if s.info.IsClientStream {
-		logtag.Printf(s.tag, "↘️ %s: msg: %s", s.info.FullMethod, m)
-	}
-
-	return err
-}
-
 type clientStreamMsgInterceptor struct {
 	grpc.ClientStream
 	desc   *grpc.StreamDesc
@@ -130,7 +127,7 @@ func (c *clientStreamMsgInterceptor) SendMsg(m any) error {
 	if err != nil {
 		logtag.Errorf(c.tag, "%s: %s", c.method, logtag.ToColoredText(logtag.Red, err.Error()))
 	} else if c.desc.ClientStreams {
-		logtag.Printf(c.tag, "↗️ %s: msg: %s", c.method, m)
+		logtag.Printf(c.tag, "↗️ %s: %s", c.method, m)
 	}
 
 	return err
@@ -142,7 +139,7 @@ func (c *clientStreamMsgInterceptor) RecvMsg(m any) error {
 	if err != nil && err != io.EOF {
 		logtag.Errorf(c.tag, "%s: %s", c.method, logtag.ToColoredText(logtag.Red, err.Error()))
 	} else if c.desc.ServerStreams {
-		logtag.Printf(c.tag, "↘️ %s: msg: %s", c.method, m)
+		logtag.Printf(c.tag, "↘️ %s: %s", c.method, m)
 	}
 
 	return err
