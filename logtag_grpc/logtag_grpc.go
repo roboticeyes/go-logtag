@@ -48,7 +48,11 @@ func GrpcLogTagServerStreamInterceptor(logTag string) grpc.StreamServerIntercept
 		// Calls the handler
 		err := handler(srv, &serverStreamMsgInterceptor{ServerStream: ss, tag: logTag, info: info})
 
-		logtag.Printf(logTag, "↗️ %s: streaming closed", info.FullMethod)
+		if err != nil {
+			logtag.Errorf(logTag, "↗️ %s: %s", info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
+		} else {
+			logtag.Printf(logTag, "↗️ %s: streaming closed", info.FullMethod)
+		}
 
 		return err
 	}
