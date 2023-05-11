@@ -10,8 +10,8 @@ Colored tags before log messages
 [url "https://YOUR_GITHUB_USERNAME@github.com/"]
     insteadOf = https://github.com/
 ```
+- Add the organization to the GOPRIVATE go environment variable `go env -w GOPRIVATE=github.com/roboticeyes/*` (Note: need to look how to append)
 
-- Add the repo to the GOPRIVATE go environment variable `go env -w GOPRIVATE=github.com/roboticeyes/go-logtag` (Note: need to look how to append)
 - Import the package in code same way as other modules
 - Define your tags and colormap and call `ConfigureLogger`:
 ```go
