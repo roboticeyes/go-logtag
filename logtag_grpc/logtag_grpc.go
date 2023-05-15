@@ -2,13 +2,13 @@ package logtag_grpc
 
 import (
 	"context"
+	"io"
 
 	"github.com/roboticeyes/go-logtag/logtag"
 	"google.golang.org/grpc"
 )
 
 func GrpcLogTagServerUnaryInterceptor(logTag string) grpc.UnaryServerInterceptor {
-
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 
 		logtag.Printf(logTag, "↘️ %s: %s", info.FullMethod, req)
@@ -47,26 +47,16 @@ func GrpcLogTagServerStreamInterceptor(logTag string) grpc.StreamServerIntercept
 		logtag.Printf(logTag, "↘️ %s: streaming started (client streaming: %t, server streaming: %t)", info.FullMethod, info.IsClientStream, info.IsServerStream)
 		// Calls the handler
 		err := handler(srv, &serverStreamMsgInterceptor{ServerStream: ss, tag: logTag, info: info})
-
-		logtag.Printf(logTag, "↗️ %s: streaming closed", info.FullMethod)
-
-		return err
-	}
-}
-
-func GrpcLogTagClientStreamInterceptor(logTag string) grpc.StreamClientInterceptor {
-	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
-
-		logtag.Printf(logTag, "↘️ %s: streaming started  (client streaming: %t, server streaming: %t)", method, desc.ClientStreams, desc.ServerStreams)
-		// Calls the handler
-		clientStream, err := streamer(ctx, desc, cc, method, opts...)
+		if err == io.EOF {
+			return err
+		}
 		if err != nil {
-			return nil, err
+			logtag.Errorf(logTag, "↗️ %s: %s", info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
+		} else {
+			logtag.Printf(logTag, "↗️ %s: streaming closed", info.FullMethod)
 		}
 
-		logtag.Printf(logTag, "↗️ %s: streaming closed", method)
-
-		return clientStream, nil
+		return err
 	}
 }
 
@@ -78,10 +68,13 @@ type serverStreamMsgInterceptor struct {
 
 func (s *serverStreamMsgInterceptor) SendMsg(m any) error {
 	err := s.ServerStream.SendMsg(m)
+	if err == io.EOF {
+		return err
+	}
 	if err != nil {
-		logtag.Errorf(s.tag, "%s: %s", s.info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
+		logtag.Errorf(s.tag, "↗️ %s: %s", s.info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
 	} else if s.info.IsServerStream {
-		logtag.Printf(s.tag, "↗️ %s: msg: %s", s.info.FullMethod, m)
+		logtag.Printf(s.tag, "↗️ %s: %s", s.info.FullMethod, m)
 	}
 
 	return err
@@ -89,11 +82,63 @@ func (s *serverStreamMsgInterceptor) SendMsg(m any) error {
 
 func (s *serverStreamMsgInterceptor) RecvMsg(m any) error {
 	err := s.ServerStream.RecvMsg(m)
+	if err == io.EOF {
+		return err
+	}
+	if err != nil {
+		logtag.Errorf(s.tag, "↘️ %s: %s", s.info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
+	} else if s.info.IsClientStream {
+		logtag.Printf(s.tag, "↘️ %s: %s", s.info.FullMethod, m)
+	}
+
+	return err
+}
+
+// TODO GrpcLogTagClientStreamInterceptor Not tested, might need some love
+func GrpcLogTagClientStreamInterceptor(logTag string) grpc.StreamClientInterceptor {
+	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+
+		logtag.Printf(logTag, "↘️ %s: streaming started  (client streaming: %t, server streaming: %t)", method, desc.ClientStreams, desc.ServerStreams)
+
+		// Calls the handler
+		clientStream, err := streamer(ctx, desc, cc, method, opts...)
+
+		if err != nil {
+			logtag.Errorf(logTag, "↗️ %s: %s", method, logtag.ToColoredText(logtag.Red, err.Error()))
+			return nil, err
+		} else {
+			logtag.Printf(logTag, "↗️ %s: streaming closed", method)
+		}
+		return &clientStreamMsgInterceptor{ClientStream: clientStream, tag: logTag, desc: desc, method: method}, nil
+	}
+}
+
+type clientStreamMsgInterceptor struct {
+	grpc.ClientStream
+	desc   *grpc.StreamDesc
+	tag    string
+	method string
+}
+
+func (c *clientStreamMsgInterceptor) SendMsg(m any) error {
+	err := c.ClientStream.SendMsg(m)
 
 	if err != nil {
-		logtag.Errorf(s.tag, "%s: %s", s.info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
-	} else if s.info.IsClientStream {
-		logtag.Printf(s.tag, "↘️ %s: msg: %s", s.info.FullMethod, m)
+		logtag.Errorf(c.tag, "%s: %s", c.method, logtag.ToColoredText(logtag.Red, err.Error()))
+	} else if c.desc.ClientStreams {
+		logtag.Printf(c.tag, "↗️ %s: %s", c.method, m)
+	}
+
+	return err
+}
+
+func (c *clientStreamMsgInterceptor) RecvMsg(m any) error {
+	err := c.ClientStream.RecvMsg(m)
+
+	if err != nil && err != io.EOF {
+		logtag.Errorf(c.tag, "%s: %s", c.method, logtag.ToColoredText(logtag.Red, err.Error()))
+	} else if c.desc.ServerStreams {
+		logtag.Printf(c.tag, "↘️ %s: %s", c.method, m)
 	}
 
 	return err
