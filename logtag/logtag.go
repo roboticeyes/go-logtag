@@ -84,13 +84,13 @@ func (c LogColor) ColorString() string {
 
 var tagMap map[string]LogColor
 var minLogLevel LogLevel = LevelInfo
-var ignoreTags map[string]struct{}
+var ignoreMap map[string]struct{}
 
-func ConfigureLogger(tags map[string]LogColor, ignore []string) {
+func ConfigureLogger(tags map[string]LogColor, ignoreTags []string) {
 	tagMap = tags
-	ignoreTags = make(map[string]struct{})
-	for _, tag := range ignore {
-		ignoreTags[tag] = struct{}{}
+	ignoreMap = make(map[string]struct{})
+	for _, tag := range ignoreTags {
+		ignoreMap[tag] = struct{}{}
 	}
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime)) //remove timestamp, already included in grafana
 }
@@ -115,7 +115,7 @@ func ToColoredText(col LogColor, message string) string {
 }
 
 func dontPrint(tag string) bool {
-	_, isIgnored := ignoreTags[tag]
+	_, isIgnored := ignoreMap[tag]
 	return minLogLevel > LevelInfo || isIgnored
 }
 
