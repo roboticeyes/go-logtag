@@ -116,7 +116,7 @@ func ToColoredText(col LogColor, message string) string {
 
 func dontPrint(tag string) bool {
 	_, isIgnored := ignoreMap[tag]
-	return minLogLevel > LevelInfo || isIgnored
+	return isIgnored || minLogLevel > LevelInfo
 }
 
 func Printf(tag string, format string, v ...any) {
