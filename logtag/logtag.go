@@ -84,9 +84,14 @@ func (c LogColor) ColorString() string {
 
 var tagMap map[string]LogColor
 var minLogLevel LogLevel = LevelInfo
+var ignoreMap map[string]struct{}
 
-func ConfigureLogger(tags map[string]LogColor) {
+func ConfigureLogger(tags map[string]LogColor, ignoreTags []string) {
 	tagMap = tags
+	ignoreMap = make(map[string]struct{})
+	for _, tag := range ignoreTags {
+		ignoreMap[tag] = struct{}{}
+	}
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime)) //remove timestamp, already included in grafana
 }
 
@@ -109,71 +114,76 @@ func ToColoredText(col LogColor, message string) string {
 	return col.ColorString() + message + Reset.ColorString()
 }
 
+func dontPrint(tag string) bool {
+	_, isIgnored := ignoreMap[tag]
+	return isIgnored || minLogLevel > LevelInfo
+}
+
 func Printf(tag string, format string, v ...any) {
-	if minLogLevel > LevelInfo {
+	if dontPrint(tag) {
 		return
 	}
 	log.Printf(addColoredTag(tag, format), v...)
 }
 
 func Println(tag string, msg string) {
-	if minLogLevel > LevelInfo {
+	if dontPrint(tag) {
 		return
 	}
 	log.Print(addColoredTag(tag, msg))
 }
 
 func Infof(tag string, format string, v ...any) {
-	if minLogLevel > LevelInfo {
+	if dontPrint(tag) {
 		return
 	}
 	Printf(tag, format, v...)
 }
 
 func Info(tag string, msg string) {
-	if minLogLevel > LevelInfo {
+	if dontPrint(tag) {
 		return
 	}
 	Println(tag, msg)
 }
 
 func Warnf(tag string, format string, v ...any) {
-	if minLogLevel > LevelWarning {
+	if dontPrint(tag) {
 		return
 	}
 	log.Printf(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+format), v...)
 }
 
 func Warn(tag string, msg string) {
-	if minLogLevel > LevelWarning {
+	if dontPrint(tag) {
 		return
 	}
 	log.Print(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+msg))
 }
 
 func Errorf(tag string, format string, v ...any) {
-	if minLogLevel > LevelError {
+	if dontPrint(tag) {
 		return
 	}
 	log.Printf(addColoredTag(tag, ToColoredText(Red, "Error: ")+format), v...)
 }
 
 func Error(tag string, msg string) {
-	if minLogLevel > LevelError {
+	if dontPrint(tag) {
 		return
 	}
 	log.Print(addColoredTag(tag, ToColoredText(Red, "Error: ")+msg))
 }
 
 func Fatalf(tag string, format string, v ...any) {
-	if minLogLevel > LevelFatal {
+	if dontPrint(tag) {
 		return
 	}
 	log.Fatalf(addColoredTag(tag, ToColoredText(Red, "Fatal: ")+format), v...)
 }
 
 func Fatal(tag string, msg string) {
-	if minLogLevel > LevelFatal {
+	if dontPrint(tag) {
 		return
 	}
 	log.Fatal(addColoredTag(tag, ToColoredText(Red, "Fatal: ")+msg))
