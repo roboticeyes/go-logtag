@@ -5,14 +5,6 @@ Colored tags before log messages
 
 ## Usage
 
-- if you have not done so yet, add the following code (with correct username) to your `.gitconfig` file
-```
-[url "https://YOUR_GITHUB_USERNAME@github.com/"]
-    insteadOf = https://github.com/
-```
-- Add the organization to the GOPRIVATE go environment variable `go env -w GOPRIVATE=github.com/roboticeyes/*` (Note: need to look how to append)
-
-- Import the package in code same way as other modules
 - Define your tags and colormap and call `ConfigureLogger`:
 ```go
 // define tags
@@ -51,8 +43,6 @@ logtag.SetMinimumLogLevel(logtag.LevelError)
 ```
 
 ## Gin middleware function
-
-![image](https://user-images.githubusercontent.com/25147494/233414767-20375971-7baa-4d5c-9321-d52d63d3279c.png)
 
 Use as gin logging middleware:
 ```go
