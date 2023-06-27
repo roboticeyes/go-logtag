@@ -52,8 +52,6 @@ logtag.SetMinimumLogLevel(logtag.LevelError)
 
 ## Gin middleware function
 
-![image](https://user-images.githubusercontent.com/25147494/233414767-20375971-7baa-4d5c-9321-d52d63d3279c.png)
-
 Use as gin logging middleware:
 ```go
 engine *gin.Engine = gin.New()
