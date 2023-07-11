@@ -114,76 +114,76 @@ func ToColoredText(col LogColor, message string) string {
 	return col.ColorString() + message + Reset.ColorString()
 }
 
-func dontPrint(tag string) bool {
+func dontPrint(tag string, level LogLevel) bool {
 	_, isIgnored := ignoreMap[tag]
-	return isIgnored || minLogLevel > LevelInfo
+	return isIgnored || minLogLevel > level
 }
 
 func Printf(tag string, format string, v ...any) {
-	if dontPrint(tag) {
+	if dontPrint(tag, LevelInfo) {
 		return
 	}
 	log.Printf(addColoredTag(tag, format), v...)
 }
 
 func Println(tag string, msg string) {
-	if dontPrint(tag) {
+	if dontPrint(tag, LevelInfo) {
 		return
 	}
 	log.Print(addColoredTag(tag, msg))
 }
 
 func Infof(tag string, format string, v ...any) {
-	if dontPrint(tag) {
+	if dontPrint(tag, LevelInfo) {
 		return
 	}
 	Printf(tag, format, v...)
 }
 
 func Info(tag string, msg string) {
-	if dontPrint(tag) {
+	if dontPrint(tag, LevelInfo) {
 		return
 	}
 	Println(tag, msg)
 }
 
 func Warnf(tag string, format string, v ...any) {
-	if dontPrint(tag) {
+	if dontPrint(tag, LevelWarning) {
 		return
 	}
 	log.Printf(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+format), v...)
 }
 
 func Warn(tag string, msg string) {
-	if dontPrint(tag) {
+	if dontPrint(tag, LevelWarning) {
 		return
 	}
 	log.Print(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+msg))
 }
 
 func Errorf(tag string, format string, v ...any) {
-	if dontPrint(tag) {
+	if dontPrint(tag, LevelError) {
 		return
 	}
 	log.Printf(addColoredTag(tag, ToColoredText(Red, "Error: ")+format), v...)
 }
 
 func Error(tag string, msg string) {
-	if dontPrint(tag) {
+	if dontPrint(tag, LevelError) {
 		return
 	}
 	log.Print(addColoredTag(tag, ToColoredText(Red, "Error: ")+msg))
 }
 
 func Fatalf(tag string, format string, v ...any) {
-	if dontPrint(tag) {
+	if dontPrint(tag, LevelFatal) {
 		return
 	}
 	log.Fatalf(addColoredTag(tag, ToColoredText(Red, "Fatal: ")+format), v...)
 }
 
 func Fatal(tag string, msg string) {
-	if dontPrint(tag) {
+	if dontPrint(tag, LevelFatal) {
 		return
 	}
 	log.Fatal(addColoredTag(tag, ToColoredText(Red, "Fatal: ")+msg))
