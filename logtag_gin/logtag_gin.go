@@ -57,7 +57,7 @@ func GinLogTag(tag string, ignorePaths []MethodAndPath) gin.HandlerFunc {
 				return
 			}
 
-			msg := fmt.Sprintf("%s - %s \"%s %s\" code=%s %d \"%s\" (%dms)", clientIP, hostname, method, path, statusCodeString, dataLength, clientUserAgent, latency)
+			msg := fmt.Sprintf("\"%s %s\" code=%s %d \"%s\" (%dms) %s - %s ", method, path, statusCodeString, dataLength, clientUserAgent, latency, clientIP, hostname)
 			if statusCode >= http.StatusInternalServerError {
 				logtag.Error(tag, msg)
 			} else {
