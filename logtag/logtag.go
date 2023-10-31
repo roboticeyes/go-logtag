@@ -38,6 +38,7 @@ const (
 	BrightMagenta
 	BrightCyan
 	BrightWhite
+	Grey
 	Reset
 )
 
@@ -75,6 +76,8 @@ func (c LogColor) ColorString() string {
 		return "\x1b[38;96m"
 	case BrightWhite:
 		return "\x1b[38;97m"
+	case Grey:
+		return "\x1b[38;5;247m"
 	case Reset:
 		return "\x1b[0m"
 	}
