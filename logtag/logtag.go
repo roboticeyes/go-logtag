@@ -39,7 +39,6 @@ const (
 	BrightMagenta
 	BrightCyan
 	BrightWhite
-	Grey
 	Reset
 )
 
@@ -77,8 +76,6 @@ func (c LogColor) ColorString() string {
 		return "\x1b[38;96m"
 	case BrightWhite:
 		return "\x1b[38;97m"
-	case Grey:
-		return "\x1b[38;5;247m"
 	case Reset:
 		return "\x1b[0m"
 	}
@@ -149,14 +146,14 @@ func Infof(tag string, format string, v ...any) {
 	if dontPrint(tag, LevelInfo) {
 		return
 	}
-	log.Printf(addDateTime(addColoredTag(tag, ToColoredText(Reset, "Info: ")+format)), v...)
+	log.Printf(addDateTime(addColoredTag(tag, ToColoredText(BrightBlack, "Info: ")+format)), v...)
 }
 
 func Info(tag string, msg string) {
 	if dontPrint(tag, LevelInfo) {
 		return
 	}
-	log.Print(addDateTime(addColoredTag(tag, ToColoredText(Reset, "Info: ")+msg)))
+	log.Print(addDateTime(addColoredTag(tag, ToColoredText(BrightBlack, "Info: ")+msg)))
 }
 
 func Warnf(tag string, format string, v ...any) {
