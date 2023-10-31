@@ -149,14 +149,14 @@ func Infof(tag string, format string, v ...any) {
 	if dontPrint(tag, LevelInfo) {
 		return
 	}
-	log.Printf(addColoredTag(tag, ToColoredText(Reset, "Info: ")+format), v...)
+	log.Printf(addDateTime(addColoredTag(tag, ToColoredText(Reset, "Info: ")+format)), v...)
 }
 
 func Info(tag string, msg string) {
 	if dontPrint(tag, LevelInfo) {
 		return
 	}
-	log.Print(addColoredTag(tag, ToColoredText(Reset, "Info: ")+msg))
+	log.Print(addDateTime(addColoredTag(tag, ToColoredText(Reset, "Info: ")+msg)))
 }
 
 func Warnf(tag string, format string, v ...any) {
