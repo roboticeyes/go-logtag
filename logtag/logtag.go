@@ -9,6 +9,7 @@ package logtag
 
 import (
 	"log"
+	"time"
 )
 
 type LogColor int
@@ -95,7 +96,7 @@ func ConfigureLogger(tags map[string]LogColor, ignoreTags []string) {
 	for _, tag := range ignoreTags {
 		ignoreMap[tag] = struct{}{}
 	}
-	// log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime)) //remove timestamp, already included in grafana
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime)) //remove timestamp, because we want to use colors
 }
 
 func SetMinimumLogLevel(l LogLevel) {
@@ -113,6 +114,14 @@ func addColoredTag(tag string, message string) string {
 	return ToColoredText(col, "["+tag+"] ") + message
 }
 
+func addDateTime(message string) string {
+	// add date/time using colors
+	t := time.Now()
+	timeString := t.Format("2006-01-02 15:04:05")
+
+	return ToColoredText(BrightBlack, timeString) + message
+}
+
 func ToColoredText(col LogColor, message string) string {
 	return col.ColorString() + message + Reset.ColorString()
 }
@@ -126,14 +135,14 @@ func Printf(tag string, format string, v ...any) {
 	if dontPrint(tag, LevelInfo) {
 		return
 	}
-	log.Printf(addColoredTag(tag, format), v...)
+	log.Printf(addDateTime(addColoredTag(tag, format)), v...)
 }
 
 func Println(tag string, msg string) {
 	if dontPrint(tag, LevelInfo) {
 		return
 	}
-	log.Print(addColoredTag(tag, msg))
+	log.Print(addDateTime(addColoredTag(tag, msg)))
 }
 
 func Infof(tag string, format string, v ...any) {
