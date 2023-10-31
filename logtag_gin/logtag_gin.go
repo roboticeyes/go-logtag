@@ -25,7 +25,10 @@ func GinLogTag(tag string, ignorePaths []MethodAndPath) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		// other handler can change c.Path so:
-		path := logtag.ToColoredText(logtag.BrightBlue, c.Request.URL.Path)
+		coloredPath := logtag.ToColoredText(logtag.BrightBlue, c.Request.URL.Path)
+		if c.Request.URL.Query().Encode() != "" {
+			coloredPath = logtag.ToColoredText(logtag.BrightBlue, c.Request.URL.Path+"?"+c.Request.URL.Query().Encode())
+		}
 		start := time.Now()
 		c.Next()
 		stop := time.Since(start)
@@ -57,7 +60,7 @@ func GinLogTag(tag string, ignorePaths []MethodAndPath) gin.HandlerFunc {
 				return
 			}
 
-			msg := fmt.Sprintf("\"%s %s\" code=%s %d \"%s\" (%dms) %s - %s ", method, path, statusCodeString, dataLength, clientUserAgent, latency, clientIP, hostname)
+			msg := fmt.Sprintf("\"%s %s\" code=%s %d \"%s\" (%dms) %s - %s ", method, coloredPath, statusCodeString, dataLength, clientUserAgent, latency, clientIP, hostname)
 			if statusCode >= http.StatusInternalServerError {
 				logtag.Error(tag, msg)
 			} else {
