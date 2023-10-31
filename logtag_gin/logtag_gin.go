@@ -11,7 +11,12 @@ import (
 	"github.com/roboticeyes/go-logtag/logtag"
 )
 
-func GinLogTag(tag string) gin.HandlerFunc {
+type MethodAndPath struct {
+	HttpMethod string
+	Path       string
+}
+
+func GinLogTag(tag string, ignorePaths []MethodAndPath) gin.HandlerFunc {
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -48,6 +53,10 @@ func GinLogTag(tag string) gin.HandlerFunc {
 		if len(c.Errors) > 0 {
 			logtag.Error(tag, c.Errors.ByType(gin.ErrorTypePrivate).String())
 		} else {
+			if contains(ignorePaths, c.Request.Method, c.Request.URL.Path) && statusCode < 300 {
+				return
+			}
+
 			msg := fmt.Sprintf("%s - %s \"%s %s\" %s %d \"%s\" (%dms)", clientIP, hostname, method, path, statusCodeString, dataLength, clientUserAgent, latency)
 			if statusCode > http.StatusInternalServerError {
 				logtag.Error(tag, msg)
@@ -56,4 +65,13 @@ func GinLogTag(tag string) gin.HandlerFunc {
 			}
 		}
 	}
+}
+
+func contains(list []MethodAndPath, method, path string) bool {
+	for _, entry := range list {
+		if entry.HttpMethod == method && entry.Path == path {
+			return true
+		}
+	}
+	return false
 }
