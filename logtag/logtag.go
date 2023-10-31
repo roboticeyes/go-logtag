@@ -163,40 +163,40 @@ func Warnf(tag string, format string, v ...any) {
 	if dontPrint(tag, LevelWarning) {
 		return
 	}
-	log.Printf(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+format), v...)
+	log.Printf(addDateTime(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+format)), v...)
 }
 
 func Warn(tag string, msg string) {
 	if dontPrint(tag, LevelWarning) {
 		return
 	}
-	log.Print(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+msg))
+	log.Print(addDateTime(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+msg)))
 }
 
 func Errorf(tag string, format string, v ...any) {
 	if dontPrint(tag, LevelError) {
 		return
 	}
-	log.Printf(addColoredTag(tag, ToColoredText(Red, "Error: ")+format), v...)
+	log.Printf(addDateTime(addColoredTag(tag, ToColoredText(Red, "Error: ")+format)), v...)
 }
 
 func Error(tag string, msg string) {
 	if dontPrint(tag, LevelError) {
 		return
 	}
-	log.Print(addColoredTag(tag, ToColoredText(Red, "Error: ")+msg))
+	log.Print(addDateTime(addColoredTag(tag, ToColoredText(Red, "Error: ")+msg)))
 }
 
 func Fatalf(tag string, format string, v ...any) {
 	if dontPrint(tag, LevelFatal) {
 		return
 	}
-	log.Fatalf(addColoredTag(tag, ToColoredText(Red, "Fatal: ")+format), v...)
+	log.Fatalf(addDateTime(addColoredTag(tag, ToColoredText(Red, "Fatal: ")+format)), v...)
 }
 
 func Fatal(tag string, msg string) {
 	if dontPrint(tag, LevelFatal) {
 		return
 	}
-	log.Fatal(addColoredTag(tag, ToColoredText(Red, "Fatal: ")+msg))
+	log.Fatal(addDateTime(addColoredTag(tag, ToColoredText(Red, "Fatal: ")+msg)))
 }
