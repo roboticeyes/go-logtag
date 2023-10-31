@@ -119,7 +119,7 @@ func addDateTime(message string) string {
 	t := time.Now()
 	timeString := t.Format("2006-01-02 15:04:05")
 
-	return ToColoredText(BrightBlack, timeString) + message
+	return ToColoredText(BrightBlack, timeString) + " " + message
 }
 
 func ToColoredText(col LogColor, message string) string {
