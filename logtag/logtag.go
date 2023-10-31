@@ -92,7 +92,7 @@ func ConfigureLogger(tags map[string]LogColor, ignoreTags []string) {
 	for _, tag := range ignoreTags {
 		ignoreMap[tag] = struct{}{}
 	}
-	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime)) //remove timestamp, already included in grafana
+	// log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime)) //remove timestamp, already included in grafana
 }
 
 func SetMinimumLogLevel(l LogLevel) {
@@ -137,14 +137,14 @@ func Infof(tag string, format string, v ...any) {
 	if dontPrint(tag, LevelInfo) {
 		return
 	}
-	Printf(tag, format, v...)
+	log.Printf(addColoredTag(tag, ToColoredText(Reset, "Info: ")+format), v...)
 }
 
 func Info(tag string, msg string) {
 	if dontPrint(tag, LevelInfo) {
 		return
 	}
-	Println(tag, msg)
+	log.Print(addColoredTag(tag, ToColoredText(Reset, "Info: ")+msg))
 }
 
 func Warnf(tag string, format string, v ...any) {
