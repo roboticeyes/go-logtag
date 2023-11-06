@@ -11,7 +11,12 @@ import (
 	"github.com/roboticeyes/go-logtag/logtag"
 )
 
-func GinLogTag(tag string) gin.HandlerFunc {
+type MethodAndPath struct {
+	HttpMethod string
+	Path       string
+}
+
+func GinLogTag(tag string, ignorePaths []MethodAndPath) gin.HandlerFunc {
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -20,7 +25,10 @@ func GinLogTag(tag string) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		// other handler can change c.Path so:
-		path := logtag.ToColoredText(logtag.BrightBlue, c.Request.URL.Path)
+		coloredPath := logtag.ToColoredText(logtag.BrightBlue, c.Request.URL.Path)
+		if c.Request.URL.Query().Encode() != "" {
+			coloredPath = logtag.ToColoredText(logtag.BrightBlue, c.Request.URL.Path+"?"+c.Request.URL.Query().Encode())
+		}
 		start := time.Now()
 		c.Next()
 		stop := time.Since(start)
@@ -48,12 +56,25 @@ func GinLogTag(tag string) gin.HandlerFunc {
 		if len(c.Errors) > 0 {
 			logtag.Error(tag, c.Errors.ByType(gin.ErrorTypePrivate).String())
 		} else {
-			msg := fmt.Sprintf("%s - %s \"%s %s\" %s %d \"%s\" (%dms)", clientIP, hostname, method, path, statusCodeString, dataLength, clientUserAgent, latency)
-			if statusCode > http.StatusInternalServerError {
+			if contains(ignorePaths, c.Request.Method, c.Request.URL.Path) && statusCode < 300 {
+				return
+			}
+
+			msg := fmt.Sprintf("\"%s %s\" code=%s %d \"%s\" (%dms) %s - %s ", method, coloredPath, statusCodeString, dataLength, clientUserAgent, latency, clientIP, hostname)
+			if statusCode >= http.StatusInternalServerError {
 				logtag.Error(tag, msg)
 			} else {
 				logtag.Info(tag, msg)
 			}
 		}
 	}
+}
+
+func contains(list []MethodAndPath, method, path string) bool {
+	for _, entry := range list {
+		if entry.HttpMethod == method && entry.Path == path {
+			return true
+		}
+	}
+	return false
 }

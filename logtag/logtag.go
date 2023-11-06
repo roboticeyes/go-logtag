@@ -9,6 +9,7 @@ package logtag
 
 import (
 	"log"
+	"time"
 )
 
 type LogColor int
@@ -92,7 +93,7 @@ func ConfigureLogger(tags map[string]LogColor, ignoreTags []string) {
 	for _, tag := range ignoreTags {
 		ignoreMap[tag] = struct{}{}
 	}
-	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime)) //remove timestamp, already included in grafana
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime)) //remove timestamp, because we want to use colors
 }
 
 func SetMinimumLogLevel(l LogLevel) {
@@ -110,6 +111,14 @@ func addColoredTag(tag string, message string) string {
 	return ToColoredText(col, "["+tag+"] ") + message
 }
 
+func addDateTime(message string) string {
+	// add date/time using colors
+	t := time.Now()
+	timeString := t.Format("2006-01-02 15:04:05")
+
+	return ToColoredText(BrightBlack, timeString) + " " + message
+}
+
 func ToColoredText(col LogColor, message string) string {
 	return col.ColorString() + message + Reset.ColorString()
 }
@@ -123,68 +132,68 @@ func Printf(tag string, format string, v ...any) {
 	if dontPrint(tag, LevelInfo) {
 		return
 	}
-	log.Printf(addColoredTag(tag, format), v...)
+	log.Printf(addDateTime(addColoredTag(tag, format)), v...)
 }
 
 func Println(tag string, msg string) {
 	if dontPrint(tag, LevelInfo) {
 		return
 	}
-	log.Print(addColoredTag(tag, msg))
+	log.Print(addDateTime(addColoredTag(tag, msg)))
 }
 
 func Infof(tag string, format string, v ...any) {
 	if dontPrint(tag, LevelInfo) {
 		return
 	}
-	Printf(tag, format, v...)
+	log.Printf(addDateTime(addColoredTag(tag, ToColoredText(BrightBlack, "Info: ")+format)), v...)
 }
 
 func Info(tag string, msg string) {
 	if dontPrint(tag, LevelInfo) {
 		return
 	}
-	Println(tag, msg)
+	log.Print(addDateTime(addColoredTag(tag, ToColoredText(BrightBlack, "Info: ")+msg)))
 }
 
 func Warnf(tag string, format string, v ...any) {
 	if dontPrint(tag, LevelWarning) {
 		return
 	}
-	log.Printf(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+format), v...)
+	log.Printf(addDateTime(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+format)), v...)
 }
 
 func Warn(tag string, msg string) {
 	if dontPrint(tag, LevelWarning) {
 		return
 	}
-	log.Print(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+msg))
+	log.Print(addDateTime(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+msg)))
 }
 
 func Errorf(tag string, format string, v ...any) {
 	if dontPrint(tag, LevelError) {
 		return
 	}
-	log.Printf(addColoredTag(tag, ToColoredText(Red, "Error: ")+format), v...)
+	log.Printf(addDateTime(addColoredTag(tag, ToColoredText(Red, "Error: ")+format)), v...)
 }
 
 func Error(tag string, msg string) {
 	if dontPrint(tag, LevelError) {
 		return
 	}
-	log.Print(addColoredTag(tag, ToColoredText(Red, "Error: ")+msg))
+	log.Print(addDateTime(addColoredTag(tag, ToColoredText(Red, "Error: ")+msg)))
 }
 
 func Fatalf(tag string, format string, v ...any) {
 	if dontPrint(tag, LevelFatal) {
 		return
 	}
-	log.Fatalf(addColoredTag(tag, ToColoredText(Red, "Fatal: ")+format), v...)
+	log.Fatalf(addDateTime(addColoredTag(tag, ToColoredText(Red, "Fatal: ")+format)), v...)
 }
 
 func Fatal(tag string, msg string) {
 	if dontPrint(tag, LevelFatal) {
 		return
 	}
-	log.Fatal(addColoredTag(tag, ToColoredText(Red, "Fatal: ")+msg))
+	log.Fatal(addDateTime(addColoredTag(tag, ToColoredText(Red, "Fatal: ")+msg)))
 }
