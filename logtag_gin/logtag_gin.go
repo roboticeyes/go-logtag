@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -72,8 +73,11 @@ func GinLogTag(tag string, ignorePaths []MethodAndPath) gin.HandlerFunc {
 
 func contains(list []MethodAndPath, method, path string) bool {
 	for _, entry := range list {
-		if entry.HttpMethod == method && entry.Path == path {
-			return true
+		if entry.HttpMethod == method {
+			matched, _ := regexp.Match(entry.Path, []byte(path))
+			if matched {
+				return true
+			}
 		}
 	}
 	return false
