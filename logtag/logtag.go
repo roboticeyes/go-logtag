@@ -160,14 +160,14 @@ func Warnf(tag string, format string, v ...any) {
 	if dontPrint(tag, LevelWarning) {
 		return
 	}
-	log.Printf(addDateTime(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+format)), v...)
+	log.Printf(addDateTime(addColoredTag(tag, ToColoredText(Yellow, "Warn: ")+format)), v...)
 }
 
 func Warn(tag string, msg string) {
 	if dontPrint(tag, LevelWarning) {
 		return
 	}
-	log.Print(addDateTime(addColoredTag(tag, ToColoredText(Yellow, "Warning: ")+msg)))
+	log.Print(addDateTime(addColoredTag(tag, ToColoredText(Yellow, "Warn: ")+msg)))
 }
 
 func Errorf(tag string, format string, v ...any) {
