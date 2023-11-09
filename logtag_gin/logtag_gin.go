@@ -77,11 +77,8 @@ func contains(list []MethodAndPath, method, path string) bool {
 	for _, entry := range list {
 		if entry.HttpMethod == method {
 			matched, err := regexp.Match(entry.Path, []byte(path))
-			if matched {
+			if err != nil && matched {
 				return true
-			}
-			if err != nil {
-				logtag.Error("ERRRROR", err.Error())
 			}
 		}
 	}
