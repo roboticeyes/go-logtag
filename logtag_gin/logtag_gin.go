@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,10 +26,12 @@ func GinLogTag(tag string, ignorePaths []MethodAndPath) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		// other handler can change c.Path so:
-		coloredPath := logtag.ToColoredText(logtag.BrightBlue, c.Request.URL.Path)
+		path := c.Request.URL.Path
+
 		if c.Request.URL.Query().Encode() != "" {
-			coloredPath = logtag.ToColoredText(logtag.BrightBlue, c.Request.URL.Path+"?"+c.Request.URL.Query().Encode())
+			path = c.Request.URL.Path + "?" + c.Request.URL.Query().Encode()
 		}
+		coloredPath := logtag.ToColoredText(logtag.BrightBlue, path)
 		start := time.Now()
 		c.Next()
 		stop := time.Since(start)
@@ -56,7 +59,7 @@ func GinLogTag(tag string, ignorePaths []MethodAndPath) gin.HandlerFunc {
 		if len(c.Errors) > 0 {
 			logtag.Error(tag, c.Errors.ByType(gin.ErrorTypePrivate).String())
 		} else {
-			if contains(ignorePaths, c.Request.Method, c.Request.URL.Path) && statusCode < 300 {
+			if contains(ignorePaths, c.Request.Method, path) && statusCode < 300 {
 				return
 			}
 
@@ -72,8 +75,11 @@ func GinLogTag(tag string, ignorePaths []MethodAndPath) gin.HandlerFunc {
 
 func contains(list []MethodAndPath, method, path string) bool {
 	for _, entry := range list {
-		if entry.HttpMethod == method && entry.Path == path {
-			return true
+		if entry.HttpMethod == method {
+			matched, err := regexp.Match(entry.Path, []byte(path))
+			if err != nil && matched {
+				return true
+			}
 		}
 	}
 	return false
