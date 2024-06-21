@@ -2,13 +2,15 @@ package logtag_grpc
 
 import (
 	"context"
+	"fmt"
 	"io"
 
+	"github.com/aquilax/truncate"
 	"github.com/roboticeyes/go-logtag/logtag"
 	"google.golang.org/grpc"
 )
 
-func GrpcLogTagServerUnaryInterceptor(logTag string) grpc.UnaryServerInterceptor {
+func GrpcLogTagServerUnaryInterceptor(logTag string, truncateLength int) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 
 		logtag.Printf(logTag, "↘️ %s: %s", info.FullMethod, req)
@@ -18,14 +20,14 @@ func GrpcLogTagServerUnaryInterceptor(logTag string) grpc.UnaryServerInterceptor
 		if err != nil {
 			logtag.Errorf(logTag, "↗️ %s: %s", info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
 		} else {
-			logtag.Printf(logTag, "↗️ %s: %s", info.FullMethod, h)
+			logtag.Printf(logTag, "↗️ %s: %s", info.FullMethod, truncateIfNeeded(h, truncateLength))
 		}
 
 		return h, err
 	}
 }
 
-func GrpcLogTagClientUnaryInterceptor(logTag string) grpc.UnaryClientInterceptor {
+func GrpcLogTagClientUnaryInterceptor(logTag string, truncateLength int) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req interface{}, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		logtag.Printf(logTag, "↗️ %s: %s", method, req)
 		// Calls the handler
@@ -34,7 +36,7 @@ func GrpcLogTagClientUnaryInterceptor(logTag string) grpc.UnaryClientInterceptor
 		if err != nil {
 			logtag.Errorf(logTag, "↘️ %s: %s", method, logtag.ToColoredText(logtag.Red, err.Error()))
 		} else {
-			logtag.Printf(logTag, "↘️ %s: %s", method, reply)
+			logtag.Printf(logTag, "↘️ %s: %s", method, truncateIfNeeded(reply, truncateLength))
 		}
 
 		return err
@@ -142,4 +144,10 @@ func (c *clientStreamMsgInterceptor) RecvMsg(m any) error {
 	}
 
 	return err
+}
+
+// limit the message to a given legth. Useful for large replies like images, ...
+func truncateIfNeeded(message interface{}, maxLength int) string {
+	truncated := truncate.Truncate(fmt.Sprintf("%s", message), maxLength, "...<truncated>", truncate.PositionEnd)
+	return truncated
 }

@@ -3,6 +3,7 @@ module github.com/roboticeyes/go-logtag
 go 1.20
 
 require (
+	github.com/aquilax/truncate v1.0.0
 	github.com/gin-gonic/gin v1.9.0
 	google.golang.org/grpc v1.55.0
 )
