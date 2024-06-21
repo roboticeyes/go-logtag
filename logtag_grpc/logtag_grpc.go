@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func GrpcLogTagServerUnaryInterceptor(logTag string) grpc.UnaryServerInterceptor {
+func GrpcLogTagServerUnaryInterceptor(logTag string, logPayload bool) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 
 		logtag.Printf(logTag, "↘️ %s: %s", info.FullMethod, req)
@@ -17,15 +17,17 @@ func GrpcLogTagServerUnaryInterceptor(logTag string) grpc.UnaryServerInterceptor
 
 		if err != nil {
 			logtag.Errorf(logTag, "↗️ %s: %s", info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
+		} else if logPayload {
+			logtag.Printf(logTag, "↘️ %s: %.500s", info.FullMethod, h)
 		} else {
-			logtag.Printf(logTag, "↗️ %s: %s", info.FullMethod, h)
+			logtag.Printf(logTag, "↘️ %s: <payload truncated>", info.FullMethod)
 		}
 
 		return h, err
 	}
 }
 
-func GrpcLogTagClientUnaryInterceptor(logTag string) grpc.UnaryClientInterceptor {
+func GrpcLogTagClientUnaryInterceptor(logTag string, logPayload bool) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req interface{}, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		logtag.Printf(logTag, "↗️ %s: %s", method, req)
 		// Calls the handler
@@ -33,8 +35,10 @@ func GrpcLogTagClientUnaryInterceptor(logTag string) grpc.UnaryClientInterceptor
 
 		if err != nil {
 			logtag.Errorf(logTag, "↘️ %s: %s", method, logtag.ToColoredText(logtag.Red, err.Error()))
+		} else if logPayload {
+			logtag.Printf(logTag, "↘️ %s: %.500s", method, reply)
 		} else {
-			logtag.Printf(logTag, "↘️ %s: %s", method, reply)
+			logtag.Printf(logTag, "↘️ %s: <payload truncated>", method)
 		}
 
 		return err
