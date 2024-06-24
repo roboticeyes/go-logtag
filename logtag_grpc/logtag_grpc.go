@@ -8,7 +8,17 @@ import (
 	"google.golang.org/grpc"
 )
 
-func GrpcLogTagServerUnaryInterceptor(logTag string, logPayload bool) grpc.UnaryServerInterceptor {
+// ----------------------------------------------------------------------------------------------------------------
+// Server Unary Interceptors
+func GrpcLogTagServerUnaryInterceptor(logTag string) grpc.UnaryServerInterceptor {
+	return grpcLogTagServerUnaryInterceptor(logTag, true)
+}
+
+func GrpcLogTagServerUnaryInterceptorWithoutPayload(logTag string) grpc.UnaryServerInterceptor {
+	return grpcLogTagServerUnaryInterceptor(logTag, false)
+}
+
+func grpcLogTagServerUnaryInterceptor(logTag string, logPayload bool) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 
 		if logPayload {
@@ -31,7 +41,17 @@ func GrpcLogTagServerUnaryInterceptor(logTag string, logPayload bool) grpc.Unary
 	}
 }
 
-func GrpcLogTagClientUnaryInterceptor(logTag string, logPayload bool) grpc.UnaryClientInterceptor {
+// ----------------------------------------------------------------------------------------------------------------
+// Client Unary Interceptors
+func GrpcLogTagClientUnaryInterceptor(logTag string) grpc.UnaryClientInterceptor {
+	return grpcLogTagClientUnaryInterceptor(logTag, true)
+}
+
+func GrpcLogTagClientUnaryInterceptorWithoutPayload(logTag string) grpc.UnaryClientInterceptor {
+	return grpcLogTagClientUnaryInterceptor(logTag, false)
+}
+
+func grpcLogTagClientUnaryInterceptor(logTag string, logPayload bool) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req interface{}, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 
 		if logPayload {
@@ -55,12 +75,33 @@ func GrpcLogTagClientUnaryInterceptor(logTag string, logPayload bool) grpc.Unary
 	}
 }
 
-func GrpcLogTagServerStreamInterceptor(logTag string, logPayload bool) grpc.StreamServerInterceptor {
+// ----------------------------------------------------------------------------------------------------------------
+// Server Stream Interceptors
+func GrpcLogTagServerStreamInterceptor(logTag string) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 
 		logtag.Printf(logTag, "↘️ %s: streaming started (client streaming: %t, server streaming: %t)", info.FullMethod, info.IsClientStream, info.IsServerStream)
 		// Calls the handler
-		err := handler(srv, &serverStreamMsgInterceptor{ServerStream: ss, tag: logTag, info: info, logPayload: logPayload})
+		err := handler(srv, &serverStreamMsgInterceptor{ServerStream: ss, tag: logTag, info: info, logPayload: true})
+		if err == io.EOF {
+			return err
+		}
+		if err != nil {
+			logtag.Errorf(logTag, "↗️ %s: %s", info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
+		} else {
+			logtag.Printf(logTag, "↗️ %s: streaming closed", info.FullMethod)
+		}
+
+		return err
+	}
+}
+
+func GrpcLogTagServerStreamInterceptorWithoutPayload(logTag string) grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+
+		logtag.Printf(logTag, "↘️ %s: streaming started (client streaming: %t, server streaming: %t)", info.FullMethod, info.IsClientStream, info.IsServerStream)
+		// Calls the handler
+		err := handler(srv, &serverStreamMsgInterceptor{ServerStream: ss, tag: logTag, info: info, logPayload: false})
 		if err == io.EOF {
 			return err
 		}
@@ -118,8 +159,10 @@ func (s *serverStreamMsgInterceptor) RecvMsg(m any) error {
 	return err
 }
 
+// ----------------------------------------------------------------------------------------------------------------
+// Client Stream Interceptors
 // TODO GrpcLogTagClientStreamInterceptor Not tested, might need some love
-func GrpcLogTagClientStreamInterceptor(logTag string, logPayload bool) grpc.StreamClientInterceptor {
+func GrpcLogTagClientStreamInterceptor(logTag string) grpc.StreamClientInterceptor {
 	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 
 		logtag.Printf(logTag, "↘️ %s: streaming started  (client streaming: %t, server streaming: %t)", method, desc.ClientStreams, desc.ServerStreams)
@@ -133,7 +176,25 @@ func GrpcLogTagClientStreamInterceptor(logTag string, logPayload bool) grpc.Stre
 		} else {
 			logtag.Printf(logTag, "↗️ %s: streaming closed", method)
 		}
-		return &clientStreamMsgInterceptor{ClientStream: clientStream, tag: logTag, desc: desc, method: method, logPayload: logPayload}, nil
+		return &clientStreamMsgInterceptor{ClientStream: clientStream, tag: logTag, desc: desc, method: method, logPayload: true}, nil
+	}
+}
+
+func GrpcLogTagClientStreamInterceptorWithoutPayload(logTag string) grpc.StreamClientInterceptor {
+	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+
+		logtag.Printf(logTag, "↘️ %s: streaming started  (client streaming: %t, server streaming: %t)", method, desc.ClientStreams, desc.ServerStreams)
+
+		// Calls the handler
+		clientStream, err := streamer(ctx, desc, cc, method, opts...)
+
+		if err != nil {
+			logtag.Errorf(logTag, "↗️ %s: %s", method, logtag.ToColoredText(logtag.Red, err.Error()))
+			return nil, err
+		} else {
+			logtag.Printf(logTag, "↗️ %s: streaming closed", method)
+		}
+		return &clientStreamMsgInterceptor{ClientStream: clientStream, tag: logTag, desc: desc, method: method, logPayload: false}, nil
 	}
 }
 
