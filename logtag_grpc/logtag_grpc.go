@@ -32,9 +32,9 @@ func grpcLogTagServerUnaryInterceptor(logTag string, logPayload bool) grpc.Unary
 		if err != nil {
 			logtag.Errorf(logTag, "↗️ %s: %s", info.FullMethod, logtag.ToColoredText(logtag.Red, err.Error()))
 		} else if logPayload {
-			logtag.Printf(logTag, "↘️ %s: %.500s", info.FullMethod, h)
+			logtag.Printf(logTag, "↗️ %s: %.500s", info.FullMethod, h)
 		} else {
-			logtag.Printf(logTag, "↘️ %s: <payload truncated>", info.FullMethod)
+			logtag.Printf(logTag, "↗️ %s: <payload truncated>", info.FullMethod)
 		}
 
 		return h, err
